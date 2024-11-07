@@ -27,7 +27,8 @@ export interface Driver {
   last_name: string;
   dob: string | Timestamp; // Keep as string or Timestamp for flexibility
   country: string;
-  id?: number; // Optional id field for drivers
+  id?: number; 
+  docId: string;
 }
 
 export const useAuth = () => {
@@ -35,6 +36,7 @@ export const useAuth = () => {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [teams, setTeams] = useState<Driver[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -100,6 +102,7 @@ export const useAuth = () => {
       const driverList = driverSnapshot.docs.map((doc) => {
         const data = doc.data();
         return {
+          docId: doc.id,
           id: parseInt(data.id), // Convert document ID to number if required
           first_name: data.first_name,
           last_name: data.last_name,
@@ -147,7 +150,7 @@ export const useAuth = () => {
     }
   };
 
-  const updateDriver = async (driverId: number, updatedDriverData: Driver) => {
+  const updateDriver = async (driverId: string, updatedDriverData: Driver) => {
     try {
       const driverRef = doc(firestore, 'tbl_driver', driverId.toString());
       const driverToUpdate = {
@@ -163,12 +166,19 @@ export const useAuth = () => {
     }
   };
 
-  const deleteDriver = async (driverId: number) => {
+  const deleteDriver = async (driverId: string) => {
     try {
       setLoading(true);
-      const driverDoc = doc(firestore, 'tbl_driver', driverId.toString());
-      await deleteDoc(driverDoc);
-      fetchDrivers(); // Refresh the driver list after deleting
+    
+      // Optimistic UI update: Immediately remove the driver from the UI
+      const updatedDrivers = drivers.filter(driver => driver.docId !== driverId);
+      setDrivers(updatedDrivers); // Update the state to reflect the change
+
+      const driverRef = doc(firestore, 'tbl_driver', driverId.toString());
+      
+      await deleteDoc(driverRef);
+      
+      fetchDrivers();
     } catch (err: any) {
       setError("Failed to delete driver.");
     } finally {
@@ -189,5 +199,6 @@ export const useAuth = () => {
     addDriver,
     updateDriver,
     deleteDriver,
+    teams
   };
 };

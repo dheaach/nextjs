@@ -1,57 +1,58 @@
 "use client"
 
 import React, { useEffect, useState } from 'react';
-import { useAuth, Teams } from '../hooks/useAuth'; // Ensure Teams is imported
-import DriverFormModal from '../components/TeamsFormModal';
+import { useAuth, Driver } from '../hooks/useAuth'; // Ensure Driver is imported
+import DriverFormModal from '../components/DriverFormModal';
 import Header from '../components/Header';
 import Modal from '../components/Modal';
 import Footer from '../components/Footer';
 import Sidebar from '../components/Sidebar';
 import { Timestamp } from 'firebase/firestore';
 
-const TeamsPage: React.FC = () => {
-  const { teams, fetchTeams, deleteTeams, loading } = useAuth(); // Include loading state
+const DriversPage: React.FC = () => {
+  const { drivers, fetchDrivers, deleteDriver, loading } = useAuth(); // Include loading state
   const [isModalOpen, setModalOpen] = useState(false);
-  const [selectedTeams, setSelectedDriver] = useState<Teams | null>(null);
+  const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null);
   const [isConfirmationOpen, setConfirmationOpen] = useState(false); 
   const [driverToDelete, setDriverToDelete] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>(''); // New state for search query
-  const [filteredDrivers, setFilteredDrivers] = useState<Teams[]>(teams); // Filtered teams state
+  const [filteredDrivers, setFilteredDrivers] = useState<Driver[]>(drivers); // Filtered drivers state
 
   useEffect(() => {
-    fetchTeams();
-  }, [fetchTeams]);
+    fetchDrivers();
+  }, [fetchDrivers]);
 
   useEffect(() => {
-    // Filter teams whenever the search query or the teams list changes
+    // Filter drivers whenever the search query or the drivers list changes
     setFilteredDrivers(
-      teams.filter((teams) =>
-        `${teams.name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        teams.country.toLowerCase().includes(searchQuery.toLowerCase())
+      drivers.filter((driver) =>
+        `${driver.first_name} ${driver.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        driver.country.toLowerCase().includes(searchQuery.toLowerCase())
       )
     );
-  }, [searchQuery, teams]);
+  }, [searchQuery, drivers]);
 
   const handleAddDriver = () => {
-    setSelectedDriver(null); // Clear the selected teams for adding a new one
+    setSelectedDriver(null); // Clear the selected driver for adding a new one
     setModalOpen(true);
   };
 
-  const handleEditTeams = (teams: Teams) => {
+  const handleEditDriver = (driver: Driver) => {
     setSelectedDriver({
-      ...teams
-    }); // Set the selected teams for editing
+      ...driver,
+      dob: driver.dob instanceof Timestamp ? driver.dob.toDate().toISOString().split('T')[0] : driver.dob, // Convert to ISO format (YYYY-MM-DD)
+    }); // Set the selected driver for editing
     setModalOpen(true);
   };
 
-  const handleDeleteTeams = (id: string) => {
-    setDriverToDelete(id); // Set the teams ID to delete
+  const handleDeleteDriver = (id: string) => {
+    setDriverToDelete(id); // Set the driver ID to delete
     setConfirmationOpen(true); // Open confirmation modal
   };
 
-  const confirmDeleteTeams = async () => {
+  const confirmDeleteDriver = async () => {
     if (driverToDelete !== null) {
-      await deleteTeams(driverToDelete); // Perform the deletion
+      await deleteDriver(driverToDelete); // Perform the deletion
       setDriverToDelete(null);
       setConfirmationOpen(false); // Close the modal after deletion
     }
@@ -65,42 +66,46 @@ const TeamsPage: React.FC = () => {
         <main className="flex-1 p-4">
           <h2 className="text-xl mb-4">Drivers</h2>
           <button onClick={handleAddDriver} className="bg-blue-500 text-white px-4 py-2 rounded mb-4">
-            Add New Teams
+            Add New Driver
           </button>
           <div className="mb-4">
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)} // Update search query state
-              placeholder="Search by teams name"
+              placeholder="Search by driver name"
               className="border rounded p-2 w-full"
             />
           </div>
           {loading ? (
-            <div>Loading teams...</div>
+            <div>Loading drivers...</div>
           ) : (
             <table className="min-w-full border border-gray-300">
               <thead>
                 <tr>
                   <th className="border border-gray-300 px-4 py-2">#</th>
-                  <th className="border border-gray-300 px-4 py-2">Teams Name</th>
+                  <th className="border border-gray-300 px-4 py-2">Driver Name</th>
+                  <th className="border border-gray-300 px-4 py-2">Date of Birth</th>
                   <th className="border border-gray-300 px-4 py-2">Country</th>
                   <th className="border border-gray-300 px-4 py-2">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredDrivers.map((teams, index) => (
-                  <tr key={teams.id ?? `teams-${index}`}> 
+                {filteredDrivers.map((driver, index) => (
+                  <tr key={driver.id ?? `driver-${index}`}> 
                     <td className="border border-gray-300 px-4 py-2">{index + 1}</td>
                     <td className="border border-gray-300 px-4 py-2 cursor-pointer">
-                      <a href="#" onClick={() => handleEditTeams(teams)}>
-                        {teams.name}
+                      <a href="#" onClick={() => handleEditDriver(driver)}>
+                        {driver.first_name} {driver.last_name}
                       </a>
                     </td>
-                    <td className="border border-gray-300 px-4 py-2">{teams.country}</td>
+                    <td className="border border-gray-300 px-4 py-2">
+                      {driver.dob instanceof Timestamp ? driver.dob.toDate().toLocaleDateString() : driver.dob}
+                    </td>
+                    <td className="border border-gray-300 px-4 py-2">{driver.country}</td>
                     <td className="border border-gray-300 px-4 py-2">
                       <button
-                          onClick={() => handleDeleteTeams(teams.docId)}
+                          onClick={() => handleDeleteDriver(driver.docId)}
                           className="bg-red-500 text-white px-2 py-1 rounded ml-2"
                         >
                           Delete
@@ -114,20 +119,20 @@ const TeamsPage: React.FC = () => {
           <DriverFormModal
             isOpen={isModalOpen}
             onClose={() => setModalOpen(false)}
-            title={selectedTeams ? "Edit Teams" : "Add Teams"} // Adjust title based on context
-            confirmText={selectedTeams ? "Update" : "Add"} // Change text based on action
+            title={selectedDriver ? "Edit Driver" : "Add Driver"} // Adjust title based on context
+            confirmText={selectedDriver ? "Update" : "Add"} // Change text based on action
             disabled={loading} // Disable the button when loading
-            existingTeams={selectedTeams} // Pass selectedTeams to the modal
+            existingDriver={selectedDriver} // Pass selectedDriver to the modal
           />
           <Modal
             isOpen={isConfirmationOpen}
             onClose={() => setConfirmationOpen(false)}
             title="Confirm Delete"
             confirmText="Delete"
-            onConfirm={confirmDeleteTeams} // Calls deleteTeams on confirmation
+            onConfirm={confirmDeleteDriver} // Calls deleteDriver on confirmation
             disabled={loading}
           >
-            <p>Are you sure you want to delete this teams?</p>
+            <p>Are you sure you want to delete this driver?</p>
           </Modal>
         </main>
       </div>
@@ -136,4 +141,4 @@ const TeamsPage: React.FC = () => {
   );
 };
 
-export default TeamsPage;
+export default DriversPage;

@@ -1,4 +1,4 @@
-// components/DriverFormModal.tsx
+// components/TeamsFormModal.tsx
 "use client";
 
 import React, { useEffect } from 'react';
@@ -10,54 +10,48 @@ interface DriverFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  existingDriver: Driver | null;
+  existingTeams: Teams | null;
   confirmText: string;
   disabled?: boolean; 
 }
 
-interface Driver {
+interface Teams {
   id?: number; 
-  first_name: string;
-  last_name: string;
-  dob: string | Timestamp;
+  name: string;
   country: string;
   docId: string;
 }
 
-const DriverFormModal: React.FC<DriverFormModalProps> = ({
+const TeamsFormModal: React.FC<DriverFormModalProps> = ({
   isOpen,
   onClose,
-  existingDriver
+  existingTeams
 }) => {
   const { addDriver, updateDriver } = useAuth();
 
-  const [driver, setDriver] = React.useState<Driver>({
-    first_name: '',
-    last_name: '',
-    dob: '',
+  const [teams, setDriver] = React.useState<Teams>({
+    name: '',
     country: '',
     id: undefined, 
     docId: '',
   });
 
   useEffect(() => {
-    if (existingDriver) {
-      setDriver(existingDriver); // Set the driver data for editing
+    if (existingTeams) {
+      setDriver(existingTeams); // Set the teams data for editing
     } else {
         setDriver({
-            first_name: '',
-            last_name: '',
-            dob: '',
+            name: '',
             country: '',
             id: undefined,
             docId: '',
         });
     }
-  }, [existingDriver]);
+  }, [existingTeams]);
   
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setDriver({ ...driver, [e.target.name]: e.target.value });
+    setDriver({ ...teams, [e.target.name]: e.target.value });
   };
 
   const [loading, setLoading] = React.useState(false);
@@ -68,26 +62,25 @@ const DriverFormModal: React.FC<DriverFormModalProps> = ({
     setError(null);
   
     try {
-      const driverToSave = {
-        ...driver,
-        dob: driver.dob instanceof Timestamp ? driver.dob : Timestamp.fromDate(new Date(driver.dob)),
+      const teamsToSave = {
+        ...teams
       };
       
-      if (existingDriver) {
-        const driverId = existingDriver.docId;
-        if (driverId !== undefined || driverId !== '') {
-          await updateDriver(driverId, driverToSave);
+      if (existingTeams) {
+        const teamsId = existingTeams.docId;
+        if (teamsId !== undefined || teamsId !== '') {
+          await updateDriver(teamsId, teamsToSave);
         } else {
-          console.error('Invalid driver ID:', driverId);
+          console.error('Invalid teams ID:', teamsId);
           return;
         }
       } else {
-        await addDriver(driverToSave);
+        await addDriver(teamsToSave);
       }
 
       onClose(); // Close modal on successful save
     } catch (error) {
-      setError("Failed to save driver data. Please try again.");
+      setError("Failed to save teams data. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -98,7 +91,7 @@ const DriverFormModal: React.FC<DriverFormModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={existingDriver ? 'Edit Driver' : 'Add New Driver'}
+      title={existingTeams ? 'Edit Teams' : 'Add New Teams'}
       confirmText={loading ? "Submitting..." : "Submit"}
       onConfirm={handleSubmit}
       disabled={loading}
@@ -106,29 +99,9 @@ const DriverFormModal: React.FC<DriverFormModalProps> = ({
       <div>
         <input
           type="text"
-          name="first_name"
+          name="name"
           placeholder="First Name"
-          value={driver.first_name}
-          onChange={handleChange}
-          className="border rounded p-2 mb-2 w-full"
-          required
-          disabled={loading}
-        />
-        <input
-          type="text"
-          name="last_name"
-          placeholder="Last Name"
-          value={driver.last_name}
-          onChange={handleChange}
-          className="border rounded p-2 mb-2 w-full"
-          required
-          disabled={loading}
-        />
-        <input
-          type="date"
-          name="dob"
-          placeholder="Date of Birth"
-          value={driver.dob ? driver.dob.toString().split('T')[0] : ''}
+          value={teams.name}
           onChange={handleChange}
           className="border rounded p-2 mb-2 w-full"
           required
@@ -138,7 +111,7 @@ const DriverFormModal: React.FC<DriverFormModalProps> = ({
           type="text"
           name="country"
           placeholder="Country"
-          value={driver.country}
+          value={teams.country}
           onChange={handleChange}
           className="border rounded p-2 mb-2 w-full"
           required
@@ -151,4 +124,4 @@ const DriverFormModal: React.FC<DriverFormModalProps> = ({
   
 };
 
-export default DriverFormModal;
+export default TeamsFormModal;
