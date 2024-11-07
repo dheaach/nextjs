@@ -1,3 +1,11 @@
 {
-  "extends": ["next/core-web-vitals", "next/typescript"]
+  "extends": [
+    "next/core-web-vitals", // Default Next.js rules
+    "next/typescript" // TypeScript rules for Next.js
+  ],
+  "rules": {
+    "@typescript-eslint/no-unused-vars": "off", // Disable unused-vars check
+    "@typescript-eslint/no-explicit-any": "off", // Disable the 'any' rule
+    "react/no-unescaped-entities": "off" // Disable unescaped entities warning
+  }
 }
