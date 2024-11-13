@@ -33,7 +33,7 @@ export interface Driver {
 
 export interface Teams {
   name: string;// Keep as string or Timestamp for flexibility
-  driver: string;
+  driver: string[];
   country: string;
   id?: number; 
   docId: string;
@@ -233,6 +233,7 @@ export const useAuth = () => {
       const teamsToSave = {
         ...teamsData,
         id: newId,
+        driver: teamsData.driver,
       };
 
       const docRef = await addDoc(teamsRef, teamsToSave);
