@@ -31,12 +31,20 @@ export interface Driver {
   docId: string;
 }
 
+export interface Teams {
+  name: string;// Keep as string or Timestamp for flexibility
+  driver: string;
+  country: string;
+  id?: number; 
+  docId: string;
+}
+
 export const useAuth = () => {
   const [user, setUser] = useState(getSession());
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [teams, setTeams] = useState<Driver[]>([]);
+  const [teams, setTeams] = useState<Teams[]>([]);
   const router = useRouter();
 
   useEffect(() => {
@@ -186,6 +194,93 @@ export const useAuth = () => {
     }
   };
 
+  const fetchTeams = async () => {
+    try {
+      const teamsCollection = collection(firestore, 'tbl_teams');
+      const teamsSnapshot = await getDocs(teamsCollection);
+      const teamsList = teamsSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          docId: doc.id,
+          id: parseInt(data.id), // Convert document ID to number if required
+          name: data.name,
+          country: data.country,
+          driver: data.id_driver,
+        } as Teams;
+      });
+      setTeams(teamsList);
+    } catch (err: any) {
+      setError("Failed to fetch teams.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addTeams = async (teamsData: Teams) => {
+    try {
+      setLoading(true);
+      const teamsRef = collection(firestore, 'tbl_team');
+      const maxIdQuery = query(teamsRef, orderBy("id", "desc"), limit(1));
+      const querySnapshot = await getDocs(maxIdQuery);
+
+      let maxId = 0;
+      if (!querySnapshot.empty) {
+        const lastTeams = querySnapshot.docs[0].data() as Teams; // Typecast to Teams
+        maxId = lastTeams.id || 0;
+      }
+      const newId = maxId + 1;
+
+      const teamsToSave = {
+        ...teamsData,
+        id: newId,
+      };
+
+      const docRef = await addDoc(teamsRef, teamsToSave);
+      console.log('Teams added with ID:', docRef.id);
+      return docRef;
+    } catch (error) {
+      console.error('Error adding teams:', error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateTeams = async (teamsId: string, updatedTeamsData: Teams) => {
+    try {
+      const teamsRef = doc(firestore, 'tbl_team', teamsId.toString());
+      const teamsToUpdate = {
+        ...updatedTeamsData
+      };
+
+      await updateDoc(teamsRef, teamsToUpdate);
+      console.log('Teams updated with ID:', teamsId);
+    } catch (error) {
+      console.error('Error updating teams:', error);
+      throw error;
+    }
+  };
+
+  const deleteTeams = async (teamsId: string) => {
+    try {
+      setLoading(true);
+    
+      // Optimistic UI update: Immediately remove the teams from the UI
+      const updatedTeams = teams.filter(teams => teams.docId !== teamsId);
+      setTeams(updatedTeams); // Update the state to reflect the change
+
+      const teamsRef = doc(firestore, 'tbl_team', teamsId.toString());
+      
+      await deleteDoc(teamsRef);
+      
+      fetchTeams();
+    } catch (err: any) {
+      setError("Failed to delete teams.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     user,
     error,
@@ -199,6 +294,10 @@ export const useAuth = () => {
     addDriver,
     updateDriver,
     deleteDriver,
-    teams
+    teams,
+    fetchTeams,
+    addTeams,
+    updateTeams,
+    deleteTeams
   };
 };
