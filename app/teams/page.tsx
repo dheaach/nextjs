@@ -27,7 +27,8 @@ const TeamsPage: React.FC = () => {
     setFilteredTeams(
       teams.filter((teams) =>
         `${teams.name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      teams.country.toLowerCase().includes(searchQuery.toLowerCase())
+      teams.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      teams.driver.join(", ").toLowerCase().includes(searchQuery.toLowerCase())
       )
     );
   }, [searchQuery, teams]);
@@ -100,7 +101,7 @@ const TeamsPage: React.FC = () => {
                     </td>
                     <td className="border border-gray-300 px-4 py-2">{teams.country}</td>
                     <td className="border border-gray-300 px-4 py-2">
-                      
+                    {teams.driver.length > 0 ? teams.driver.join(", ") : "No drivers"}
                     </td>
                     <td className="border border-gray-300 px-4 py-2">
                       <button

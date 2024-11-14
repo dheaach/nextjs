@@ -225,7 +225,7 @@ const TeamsFormModal: React.FC<TeamsFormModalProps> = ({
 }) => {
   const { addTeams, updateTeams } = useAuth();
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
-  const [driverList, setDriverList] = useState<string[]>([]);
+  const [driverList, setDriverList] = useState<{ id: string; name: string }[]>([]); 
 
   const [teams, setTeams] = React.useState<Teams>({
     name: '',
@@ -256,8 +256,11 @@ const TeamsFormModal: React.FC<TeamsFormModalProps> = ({
     const fetchDrivers = async () => {
       try {
         const driversSnapshot = await getDocs(collection(firestore, 'tbl_driver'));
-        const driversData = driversSnapshot.docs.map(doc => doc.data().name); // assuming the driver data has a "name" field
-        setDriverList(driversData);
+        const driversData = driversSnapshot.docs.map(doc => {
+          const driverData = doc.data();
+          return { id: doc.id, name: `${driverData.first_name} ${driverData.last_name}` }; // Return id and name
+        });
+        setDriverList(driversData); // Correctly setting the list of drivers
       } catch (error) {
         setError("Failed to load drivers.");
       }
@@ -362,9 +365,9 @@ const TeamsFormModal: React.FC<TeamsFormModalProps> = ({
           disabled={loading}
         >
           {driverList.map((driver) => (
-            <option key={driver} value={driver}>
-              {driver}
-            </option>
+            <option key={driver.id} value={driver.id}>
+            {driver.name}
+          </option>
           ))}
         </select>
         {error && <p className="text-red-500 mt-2">{error}</p>} {/* Display error */}
