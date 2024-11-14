@@ -5,6 +5,8 @@ import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import { useAuth } from '../hooks/useAuth';
 import { Timestamp} from 'firebase/firestore';
+import { firestore } from '../firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 interface TeamsFormModalProps {
   isOpen: boolean;
@@ -223,6 +225,7 @@ const TeamsFormModal: React.FC<TeamsFormModalProps> = ({
 }) => {
   const { addTeams, updateTeams } = useAuth();
   const [selectedDrivers, setSelectedDrivers] = useState<string[]>([]);
+  const [driverList, setDriverList] = useState<string[]>([]);
 
   const [teams, setTeams] = React.useState<Teams>({
     name: '',
@@ -234,24 +237,41 @@ const TeamsFormModal: React.FC<TeamsFormModalProps> = ({
 
   useEffect(() => {
     if (existingTeams) {
-      setTeams(existingTeams); // Set the teams data for editing
+      setTeams(existingTeams); 
+      setSelectedDrivers(existingTeams.driver);
     } else {
-        setTeams({
-            name: '',
-            country: '',
-            id: undefined,
-            driver:[],
-            docId: '',
-        });
+      setTeams({
+        name: '',
+        country: '',
+        id: undefined,
+        driver: [],
+        docId: '',
+      });
+      setSelectedDrivers([]);
     }
   }, [existingTeams]);
   
+  useEffect(() => {
+    // Fetch drivers from Firestore when the modal opens
+    const fetchDrivers = async () => {
+      try {
+        const driversSnapshot = await getDocs(collection(firestore, 'tbl_driver'));
+        const driversData = driversSnapshot.docs.map(doc => doc.data().name); // assuming the driver data has a "name" field
+        setDriverList(driversData);
+      } catch (error) {
+        setError("Failed to load drivers.");
+      }
+    };
+
+    if (isOpen) {
+      fetchDrivers();
+    }
+  }, [isOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setTeams({ ...teams, [e.target.name]: e.target.value });
   };
 
-  const [driverList, setDriverList] = useState<string[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -263,7 +283,7 @@ const TeamsFormModal: React.FC<TeamsFormModalProps> = ({
         selected.push(options[i].value);
       }
     }
-    setSelectedDrivers(selected);
+    setSelectedDrivers(selected); // Update the selected drivers
   };
 
   const handleSubmit = async () => {
@@ -272,7 +292,8 @@ const TeamsFormModal: React.FC<TeamsFormModalProps> = ({
   
     try {
       const teamsToSave = {
-        ...teams
+        ...teams,
+        driver: selectedDrivers, 
       };
       
       if (existingTeams) {
@@ -309,7 +330,7 @@ const TeamsFormModal: React.FC<TeamsFormModalProps> = ({
         <input
           type="text"
           name="name"
-          placeholder="First Name"
+          placeholder="Teams Name"
           value={teams.name}
           onChange={handleChange}
           className="border rounded p-2 mb-2 w-full"
@@ -333,7 +354,7 @@ const TeamsFormModal: React.FC<TeamsFormModalProps> = ({
         </select>
         <select
           name="driver"
-          value={teams.driver}
+          value={selectedDrivers}
           onChange={handleDriverSelect}
           className="border rounded p-2 mb-2 w-full"
           multiple
@@ -346,7 +367,6 @@ const TeamsFormModal: React.FC<TeamsFormModalProps> = ({
             </option>
           ))}
         </select>
-
         {error && <p className="text-red-500 mt-2">{error}</p>} {/* Display error */}
       </div>
     </Modal>

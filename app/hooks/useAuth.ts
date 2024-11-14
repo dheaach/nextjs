@@ -282,6 +282,28 @@ export const useAuth = () => {
     }
   };
 
+  const fetchAvailableDrivers = async () => {
+    try {
+      setLoading(true);
+      const driverCollection = collection(firestore, 'tbl_driver');
+      const driverSnapshot = await getDocs(driverCollection);
+      const driverOptions = driverSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          label: `${data.first_name} ${data.last_name}`, // Label for display
+          value: doc.id, // ID for selection
+        };
+      });
+      return driverOptions;
+    } catch (err: any) {
+      setError("Failed to fetch available drivers.");
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  
   return {
     user,
     error,
@@ -299,6 +321,7 @@ export const useAuth = () => {
     fetchTeams,
     addTeams,
     updateTeams,
-    deleteTeams
+    deleteTeams,
+    fetchAvailableDrivers
   };
 };
